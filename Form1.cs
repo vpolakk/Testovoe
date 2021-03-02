@@ -15,6 +15,11 @@ namespace Testovoe
 {
     public partial class Form1 : Form
     {
+
+        public List<Bagette> baggetes = new List<Bagette>();
+        public List<Crousant> crousants = new List<Crousant>();
+        public List<Crendel> crendels = new List<Crendel>();
+        public List<Smetannik> smetanniks = new List<Smetannik>();
         public Form1()
         {
             InitializeComponent();
@@ -32,7 +37,20 @@ namespace Testovoe
             dataGridView1.Columns.Add("Price", "Current price:");                       //5
             dataGridView1.Columns.Add("PriceProg", "Next price:");                      //6
             dataGridView1.Columns.Add("Update", "Next price at:"); //datetime           //7
+
+            SQLUpdate();
             updateGridView();
+        }
+
+        public void SQLUpdate()
+        {
+            using (TestDBContext db = new TestDBContext())
+            {
+                baggetes = db.Bagettes.ToList();
+                crousants = db.Crousants.ToList();
+                crendels = db.Crendels.ToList();
+                smetanniks = db.Smetanniks.ToList();
+            }
         }
         //------------------------------------------------------------------//
         //Была идея сделать всё через рефлексию и игнорировать фабрики      //
@@ -95,109 +113,135 @@ namespace Testovoe
                         break;
                 }
             }
+            SQLUpdate();
             updateGridView();
         }
 
         public void updateGridView()
         {
             dataGridView1.Rows.Clear();
-            using (TestDBContext db = new TestDBContext())
+            foreach (var bakery in baggetes)
             {
-                List<Bagette> baggetes = db.Bagettes.ToList();
-                List<Crousant> crousants = db.Crousants.ToList();
-                List<Crendel> crendels = db.Crendels.ToList();
-                List<Smetannik> smetanniks = db.Smetanniks.ToList();
-                foreach (var bakery in baggetes)
+                //Проверка на удаление
+                if (bakery.TimeCritical.CompareTo(DateTime.Now)>0)//меньше нуля - раньше, больше нуля - позже, ноль - одновременно
                 {
-                    //Проверка на удаление
-                    if (bakery.TimeCritical.CompareTo(DateTime.Now)>0)//меньше нуля - раньше, больше нуля - позже, ноль - одновременно
+                    if (bakery.updatePrice(DateTime.Now))
                     {
-                        if (bakery.updatePrice(DateTime.Now))
+                        using (TestDBContext db = new TestDBContext())
                         {
                             var item = db.Bagettes.Find(bakery.ID);
                             item = bakery;
                             db.SaveChanges();
-                            //update
                         }
-                        dataGridView1.Rows.Add("Багет", bakery.TimeBaked.ToString(), bakery.TimeCritical.ToString(),
-                            bakery.TimeToSell.ToString(), bakery.Price, (bakery.Price * 0.98), bakery.TimeLastChecked - DateTime.Now);
+                        //update
                     }
-                    else
+                    dataGridView1.Rows.Add("Багет", bakery.TimeBaked.ToString(), bakery.TimeCritical.ToString(),
+                        bakery.TimeToSell.ToString(), bakery.Price, (bakery.Price * 0.98), bakery.TimeLastChecked - DateTime.Now);
+                }
+                else
+                {
+                    using (TestDBContext db = new TestDBContext())
                     {
                         var item = db.Bagettes.Find(bakery.ID);
                         item = bakery;
                         db.Bagettes.Remove(item);
+                        db.SaveChanges();
+                        SQLUpdate();
                     }
-
                 }
-                foreach (var bakery in crousants)
+
+            }
+            foreach (var bakery in crousants)
+            {
+                //Проверка на удаление
+                if (bakery.TimeCritical.CompareTo(DateTime.Now) > 0)//меньше нуля - раньше, больше нуля - позже, ноль - одновременно
                 {
-                    //Проверка на удаление
-                    if (bakery.TimeCritical.CompareTo(DateTime.Now) > 0)//меньше нуля - раньше, больше нуля - позже, ноль - одновременно
+                    if (bakery.updatePrice(DateTime.Now))
                     {
-                        if (bakery.updatePrice(DateTime.Now))
+                        using (TestDBContext db = new TestDBContext())
                         {
                             var item = db.Crousants.Find(bakery.ID);
                             item = bakery;
                             db.SaveChanges();
-                            //update
                         }
-                        dataGridView1.Rows.Add("Круасан", bakery.TimeBaked.ToString(), bakery.TimeCritical.ToString(),
-                            bakery.TimeToSell.ToString(), bakery.Price, (bakery.Price * 0.98), bakery.TimeLastChecked - DateTime.Now);
+                        //update
                     }
-                    else
+                    dataGridView1.Rows.Add("Круасан", bakery.TimeBaked.ToString(), bakery.TimeCritical.ToString(),
+                        bakery.TimeToSell.ToString(), bakery.Price, (bakery.Price * 0.98), bakery.TimeLastChecked - DateTime.Now);
+                }
+                else
+                {
+                    using (TestDBContext db = new TestDBContext())
                     {
                         var item = db.Crousants.Find(bakery.ID);
                         item = bakery;
                         db.Crousants.Remove(item);
+                        db.SaveChanges();
+                        SQLUpdate();
                     }
                 }
-                foreach (var bakery in crendels)
+            }
+            foreach (var bakery in crendels)
+            {
+                //Проверка на удаление
+                if (bakery.TimeCritical.CompareTo(DateTime.Now) > 0)//меньше нуля - раньше, больше нуля - позже, ноль - одновременно
                 {
-                    //Проверка на удаление
-                    if (bakery.TimeCritical.CompareTo(DateTime.Now) > 0)//меньше нуля - раньше, больше нуля - позже, ноль - одновременно
+                    if (bakery.updatePrice(DateTime.Now))
                     {
-                        if (bakery.updatePrice(DateTime.Now))
+                        using (TestDBContext db = new TestDBContext())
                         {
                             var item = db.Crendels.Find(bakery.ID);
                             item = bakery;
                             db.SaveChanges();
-                            //update
                         }
-                        if (DateTime.Now.CompareTo(bakery.TimeCritical) > 0)
-                            dataGridView1.Rows.Add("Крендель", bakery.TimeBaked.ToString(), bakery.TimeCritical.ToString(),
-                                bakery.TimeToSell.ToString(), bakery.Price, (0), DateTime.Now - bakery.TimeToSell);
-                        else
-                            dataGridView1.Rows.Add("Крендель", bakery.TimeBaked.ToString(), bakery.TimeCritical.ToString(),
-                            bakery.TimeToSell.ToString(), bakery.Price, (bakery.Price * 0.5), bakery.TimeCritical - DateTime.Now);
+                        //update
                     }
+                    if (DateTime.Now.CompareTo(bakery.TimeCritical) > 0)
+                        dataGridView1.Rows.Add("Крендель", bakery.TimeBaked.ToString(), bakery.TimeCritical.ToString(),
+                            bakery.TimeToSell.ToString(), bakery.Price, (0), DateTime.Now - bakery.TimeToSell);
                     else
+                        dataGridView1.Rows.Add("Крендель", bakery.TimeBaked.ToString(), bakery.TimeCritical.ToString(),
+                        bakery.TimeToSell.ToString(), bakery.Price, (bakery.Price * 0.5), bakery.TimeCritical - DateTime.Now);
+                }
+                else
+                {
+                    using (TestDBContext db = new TestDBContext())
                     {
                         var item = db.Crendels.Find(bakery.ID);
                         item = bakery;
                         db.Crendels.Remove(item);
+                        db.SaveChanges();
+                        SQLUpdate();
                     }
                 }
-                foreach (var bakery in smetanniks)
+            }
+            foreach (var bakery in smetanniks)
+            {
+                //Проверка на удаление
+                if (bakery.TimeCritical.CompareTo(DateTime.Now) > 0)//меньше нуля - раньше, больше нуля - позже, ноль - одновременно
                 {
-                    //Проверка на удаление
-                    if (bakery.TimeCritical.CompareTo(DateTime.Now) > 0)//меньше нуля - раньше, больше нуля - позже, ноль - одновременно
+                    if (bakery.updatePrice(DateTime.Now))
                     {
-                        if (bakery.updatePrice(DateTime.Now))
+                        using (TestDBContext db = new TestDBContext())
                         {
                             var item = db.Smetanniks.Find(bakery.ID);
                             item = bakery;
                             db.SaveChanges();
-                            //update
                         }
-                        dataGridView1.Rows.Add("Сметанник", bakery.TimeBaked.ToString(), bakery.TimeCritical.ToString(),
-                            bakery.TimeToSell.ToString(), bakery.Price, (bakery.Price * 0.96), bakery.TimeLastChecked - DateTime.Now);
+                        //update
                     }
-                    else
+                    dataGridView1.Rows.Add("Сметанник", bakery.TimeBaked.ToString(), bakery.TimeCritical.ToString(),
+                        bakery.TimeToSell.ToString(), bakery.Price, (bakery.Price * 0.96), bakery.TimeLastChecked - DateTime.Now);
+                }
+                else
+                {
+                    using (TestDBContext db = new TestDBContext())
                     {
                         var item = db.Smetanniks.Find(bakery.ID);
                         item = bakery;
                         db.Smetanniks.Remove(item);
+                        db.SaveChanges();
+                        SQLUpdate();
                     }
                 }
             }
